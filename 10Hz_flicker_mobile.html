@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>10Hz 黑白闪烁（手机版）</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: black;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+  #controlPanel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: system-ui, sans-serif;
+    text-align: center;
+  }
+  input, button {
+    margin: 8px;
+    padding: 8px 12px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+  }
+  button {
+    background: #0af;
+    color: white;
+  }
+  button:active {
+    background: #08c;
+  }
+</style>
+</head>
+<body>
+<div id="controlPanel">
+  <h2>⚠️ 光敏安全提醒</h2>
+  <p>此页面将以 <b>10Hz</b> 频率进行黑白闪烁，仅供科研用途。</p>
+  <ul style="text-align:left;max-width:320px">
+    <li>请确保在光线明亮环境中使用。</li>
+    <li>观看距离 ≥ 40 厘米。</li>
+    <li>如出现头晕、恶心、视觉异常请立即停止。</li>
+  </ul>
+  <label><input type="checkbox" id="agree"> 我已阅读并同意安全须知</label><br />
+  <button id="startBtn">开始闪烁（全屏）</button>
+</div>
+
+<script>
+const flashFreq = 10; // Hz 固定10Hz
+let flashing = false;
+let lastSwitch = 0;
+let colorState = false;
+let stopTime = 1800 * 1000; // 默认30分钟
+let startTimestamp = null;
+
+const body = document.body;
+const panel = document.getElementById('controlPanel');
+const startBtn = document.getElementById('startBtn');
+const agree = document.getElementById('agree');
+
+startBtn.addEventListener('click', async () => {
+  if (!agree.checked) {
+    alert('请先勾选安全须知');
+    return;
+  }
+  try {
+    if (body.requestFullscreen) await body.requestFullscreen();
+  } catch (e) {}
+  panel.style.display = 'none';
+  flashing = true;
+  startTimestamp = performance.now();
+  requestAnimationFrame(flickerLoop);
+});
+
+function flickerLoop(timestamp) {
+  if (!flashing) return;
+  const elapsed = timestamp - lastSwitch;
+  if (elapsed >= 1000 / (flashFreq * 2)) {
+    colorState = !colorState;
+    body.style.backgroundColor = colorState ? 'white' : 'black';
+    lastSwitch = timestamp;
+  }
+  if (timestamp - startTimestamp < stopTime) {
+    requestAnimationFrame(flickerLoop);
+  } else {
+    stopFlicker();
+  }
+}
+
+function stopFlicker() {
+  flashing = false;
+  body.style.backgroundColor = 'black';
+  panel.style.display = 'flex';
+  if (document.fullscreenElement) document.exitFullscreen();
+}
+
+document.addEventListener('click', () => {
+  if (flashing) {
+    flashing = false;
+    stopFlicker();
+  }
+});
+</script>
+</body>
+</html>
